@@ -30,6 +30,7 @@ import cv2
 import numpy as np
 import copy
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
+from afe.apis.loaded_net import load
 
 from ppocr.utils.stats import TrainingStats
 from ppocr.utils.save_load import save_model
@@ -622,7 +623,11 @@ def eval(
     amp_custom_white_list=[],
     amp_dtype="float16",
 ):
-    model.eval()
+    if model_type == "rec_sima":
+        model = load(model_name = "paddleocrv4_reg_optimized_model.onnx_mpk_optimized_model.onnx",
+                output_directory = "/project/davinci_users/software/ashok.sudarsanam/models/paddleOCR/sdk/")
+    else:
+        model.eval()
     with paddle.no_grad():
         total_frame = 0.0
         total_time = 0.0
@@ -665,7 +670,10 @@ def eval(
                 preds = to_float32(preds)
             else:
                 if model_type == "table" or extra_input:
-                    preds = model(images, data=batch[1:])
+                    if model_type == "rec_sima":
+                        preds = model.execute(images)
+                    else:
+                        preds = model(images, data=batch[1:])
                 elif model_type in ["kie"]:
                     preds = model(batch)
                 elif model_type in ["can"]:
