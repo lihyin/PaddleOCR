@@ -43,7 +43,7 @@ def build_backbone(config, model_type):
             from .table_master_resnet import TableResNetExtra
 
             support_dict.append("TableResNetExtra")
-    elif model_type == "rec" or model_type == "cls":
+    elif model_type == "rec" or model_type == "rec_dump_input" or model_type == "cls":
         from .rec_mobilenet_v3 import MobileNetV3
         from .rec_resnet_vd import ResNet
         from .rec_resnet_fpn import ResNetFPN

@@ -12,7 +12,7 @@ Global:
   cal_metric_during_train: true
   pretrained_model: null
   checkpoints: null
-  save_inference_dir: null
+  save_inference_dir: ./output/rec
   use_visualdl: false
   infer_img: doc/imgs_words/en/word_1.png
   character_dict_path: ppocr/utils/en_dict.txt
@@ -33,7 +33,7 @@ Optimizer:
     name: L2
     factor: 3.0e-05
 Architecture:
-  model_type: rec
+  model_type: rec_dump_input
   algorithm: SVTR_LCNet
   Transform: null
   Backbone:

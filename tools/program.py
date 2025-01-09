@@ -18,6 +18,7 @@ from __future__ import print_function
 
 import os
 import gc
+import pickle
 import sys
 import platform
 import yaml
@@ -30,7 +31,6 @@ import cv2
 import numpy as np
 import copy
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
-from afe.apis.loaded_net import load
 
 from ppocr.utils.stats import TrainingStats
 from ppocr.utils.save_load import save_model
@@ -623,11 +623,7 @@ def eval(
     amp_custom_white_list=[],
     amp_dtype="float16",
 ):
-    if model_type == "rec_sima":
-        model = load(model_name = "paddleocrv4_reg_optimized_model.onnx_mpk_optimized_model.onnx",
-                output_directory = "/project/davinci_users/software/ashok.sudarsanam/models/paddleOCR/sdk/")
-    else:
-        model.eval()
+    model.eval()
     with paddle.no_grad():
         total_frame = 0.0
         total_time = 0.0
@@ -641,13 +637,31 @@ def eval(
         )
         sum_images = 0
         for idx, batch in enumerate(valid_dataloader):
+            # if idx >= 4270:
+            #     break
             if idx >= max_iter:
                 break
             images = batch[0]
+            # if model_type == "rec_dump_input":
+            #     with open(f'{idx}.npy', 'wb') as f:
+            #         np.save(f, images.numpy().transpose(0, 2, 3, 1))  # NCHW BGR to NHWC BGR
+            #     cv2.imwrite(f"{idx}.png", (images[0].numpy().transpose(1, 2, 0) * 255).astype(np.uint8))
+
+            #     with open(f'{idx}.pkl', 'wb') as f:
+            #         pickle.dump(images.numpy().transpose(0, 2, 3, 1), f)
+
+            #     continue
+            
             start = time.time()
 
             # use amp
-            if scaler:
+            if model_type == "rec_dump_input":
+                # preds = np.fromfile(f'/project/davinci_users/software/lihang.ying/workspace/PaddleOCR/data_lmdb_release_npy/{idx}.out.npy', dtype=np.float32)
+                with open(f'/project/davinci_users/software/lihang.ying/workspace/PaddleOCR/data_lmdb_release_npy/{idx}.mla.out.pkl', 'rb') as f:
+                    preds = pickle.load(f)[0]
+                 
+                preds = preds.reshape((1, 40, 97))
+            elif scaler:
                 with paddle.amp.auto_cast(
                     level=amp_level,
                     custom_black_list=amp_custom_black_list,
@@ -670,10 +684,7 @@ def eval(
                 preds = to_float32(preds)
             else:
                 if model_type == "table" or extra_input:
-                    if model_type == "rec_sima":
-                        preds = model.execute(images)
-                    else:
-                        preds = model(images, data=batch[1:])
+                    preds = model(images, data=batch[1:])
                 elif model_type in ["kie"]:
                     preds = model(batch)
                 elif model_type in ["can"]:
