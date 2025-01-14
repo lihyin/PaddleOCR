@@ -642,25 +642,35 @@ def eval(
             if idx >= max_iter:
                 break
             images = batch[0]
-            # if model_type == "rec_dump_input":
-            #     with open(f'{idx}.npy', 'wb') as f:
-            #         np.save(f, images.numpy().transpose(0, 2, 3, 1))  # NCHW BGR to NHWC BGR
-            #     cv2.imwrite(f"{idx}.png", (images[0].numpy().transpose(1, 2, 0) * 255).astype(np.uint8))
+            
+            EXPORT_INPUT = True
+            if EXPORT_INPUT == True:
+                images.numpy().transpose(0, 2, 3, 1).tofile(f'{idx}.bin')
 
-            #     with open(f'{idx}.pkl', 'wb') as f:
-            #         pickle.dump(images.numpy().transpose(0, 2, 3, 1), f)
+                with open(f'{idx}.npy', 'wb') as f:
+                    np.save(f, images.numpy().transpose(0, 2, 3, 1))  # NCHW BGR to NHWC BGR
 
-            #     continue
+                cv2.imwrite(f"{idx}.png", (images[0].numpy().transpose(1, 2, 0) * 255).astype(np.uint8))
+
+                with open(f'{idx}.pkl', 'wb') as f:
+                    pickle.dump(images.numpy().transpose(0, 2, 3, 1), f)
+
+                continue
             
             start = time.time()
 
             # use amp
-            if model_type == "rec_dump_input":
+            IMPORT_OUTPUT = True
+            if IMPORT_OUTPUT == True:
                 # preds = np.fromfile(f'/project/davinci_users/software/lihang.ying/workspace/PaddleOCR/data_lmdb_release_npy/{idx}.out.npy', dtype=np.float32)
-                with open(f'/project/davinci_users/software/lihang.ying/workspace/PaddleOCR/data_lmdb_release_npy/{idx}.mla.out.pkl', 'rb') as f:
-                    preds = pickle.load(f)[0]
+                with open(f'/project/davinci_users/software/lihang.ying/workspace/PaddleOCR/data_det/{idx}.en_PP-OCRv3_det_infer.mla.out.pkl', 'rb') as f:
+                    pred = pickle.load(f)
                  
-                preds = preds.reshape((1, 40, 97))
+                pred = pred[0].transpose(0, 3, 1, 2)
+                preds = {}
+                preds['Student'] = {'maps': pred}
+                preds['Student2'] = {'maps': pred}
+                preds['Teacher'] = {'maps': pred}
             elif scaler:
                 with paddle.amp.auto_cast(
                     level=amp_level,
